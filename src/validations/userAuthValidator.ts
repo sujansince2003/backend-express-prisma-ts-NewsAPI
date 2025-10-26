@@ -7,6 +7,13 @@ const UserAuthSchema = z.object({
 
 })
 
-export default UserAuthSchema
+const UserLoginSchema = z.object({
+
+    email: z.email(),
+    password: z.string()
+
+})
+
+export { UserLoginSchema, UserAuthSchema }
 
 
