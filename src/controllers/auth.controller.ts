@@ -1,9 +1,10 @@
 import prisma from "../db/db.config";
 import { NextFunction, Response, Request } from "express"
-import UserAuthSchema from "../validations/userAuthValidator";
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
-const GetAllUsers = async (req: Request, res: Response) => {
+import { UserAuthSchema, UserLoginSchema } from "../validations/userAuthValidator";
+export const GetAllUsers = async (req: Request, res: Response) => {
     const users = await prisma.user.findMany();
     res.json(users);
     return;
@@ -37,15 +38,11 @@ export const RegisterUser = async (req: Request, res: Response, next: NextFuncti
 
 
 
-
-
-
-
-
         const createUser = await prisma.user.create({
             data: {
                 username,
                 email,
+                role: "USER",
                 password: hashedPassword
             }
         })
@@ -71,7 +68,7 @@ export const LoginUser = async (req: Request, res: Response) => {
 
     const body = req.body;
 
-    const validate = UserAuthSchema.safeParse(body);
+    const validate = UserLoginSchema.safeParse(body);
 
     if (!validate.success) {
         res.status(400).json({ msg: "invalid data " })
@@ -113,7 +110,7 @@ export const LoginUser = async (req: Request, res: Response) => {
         res.cookie("auth_token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            maxAge: 8640000,
+            maxAge: 24 * 60 * 60 * 1000,
             sameSite: "strict"
         })
 
@@ -133,5 +130,16 @@ export const LoginUser = async (req: Request, res: Response) => {
 }
 
 
+export const LogoutUser = async (req: Request, res: Response) => {
+    res.clearCookie("auth_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict"
+    })
+    res.status(200).json({
+        message: "logout successfully"
+    })
+    return
+}
 
-export default GetAllUsers;
+
