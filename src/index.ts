@@ -1,14 +1,16 @@
 import express, { Request, Response } from "express"
 import cors from "cors"
+import fileupload from "express-fileupload"
 import userRouter from "./routes/user.route";
-
 import cookieParser from 'cookie-parser';
 import profileRouter from "./routes/profile.route";
+
 const app = express()
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(fileupload());
 app.use(cors());
 app.use("/api/user", userRouter);
 app.use("/api/profile", profileRouter);
