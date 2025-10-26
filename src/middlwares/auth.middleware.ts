@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-
 import jwt, { JwtPayload } from "jsonwebtoken";
-
 
 declare global {
     namespace Express {
@@ -10,8 +8,6 @@ declare global {
         }
     }
 }
-
-
 
 
 export default function verifyToken(req: Request, res: Response, next: NextFunction) {
@@ -25,6 +21,7 @@ export default function verifyToken(req: Request, res: Response, next: NextFunct
         })
         return;
     }
+    console.log(token)
     try {
 
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET_KEY as string);
