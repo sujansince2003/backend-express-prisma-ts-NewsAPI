@@ -1,17 +1,21 @@
-
-
 import express, { Request, Response } from "express"
 import cors from "cors"
 import userRouter from "./routes/user.route";
+
+import cookieParser from 'cookie-parser';
+import profileRouter from "./routes/profile.route";
 const app = express()
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors())
+app.use(cookieParser());
+app.use(cors());
 app.use("/api/user", userRouter);
+app.use("/api/profile", profileRouter);
 
 
 app.get("/", (req: Request, res: Response) => {
+
     res.json({ msg: "hello soham" })
 })
 
