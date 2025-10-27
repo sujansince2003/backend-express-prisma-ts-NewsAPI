@@ -29,3 +29,6 @@ export const ImgValidator = (file?: UploadedFile): validationResult => {
 }
 
 
+export const uniqueIdGenerator = () => {
+    return uuidv4();
+}
