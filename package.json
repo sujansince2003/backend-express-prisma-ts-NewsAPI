@@ -12,7 +12,7 @@
     "build": "npm install && npx prisma generate && npx tsc"
   },
   "dependencies": {
-    "@prisma/client": "^6.13.0",
+    "@prisma/client": "^6.18.0",
     "@types/jsonwebtoken": "^9.0.10",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -31,7 +31,7 @@
     "@types/express-fileupload": "^1.5.1",
     "@types/node": "^24.2.1",
     "nodemon": "^3.1.10",
-    "prisma": "^6.13.0",
+    "prisma": "^6.18.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
