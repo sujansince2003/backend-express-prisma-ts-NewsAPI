@@ -9,6 +9,10 @@ export const newsSchema = z.object({
     updatedAt: z.date()
 })
 
+
+export type newsType = z.infer<typeof newsSchema>
+
+
 export const createNewsSchema = z.object({
     title: z.string(),
     content: z.string(),
