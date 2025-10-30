@@ -1,6 +1,5 @@
 
-import { newsType } from "../validations/newsValidation";
-
+import type { NewsWithUserType } from "../types/news.types";
 
 function ImgPath(imgName: string): string {
     const imgpath = `${process.env.BACKEND_URL}/uploads/coverimgs/${imgName}`
@@ -8,14 +7,10 @@ function ImgPath(imgName: string): string {
 }
 
 
-export function TransformNewsResponse(news: newsType) {
+export function TransformNewsResponse(news: NewsWithUserType) {
     return {
-        id: news.id,
-        title: news.title,
-        content: news.content,
+        ...news,
         coverImg: news.coverImg ? ImgPath(news.coverImg) : null,
-        userId: news.userId,
-        createdAt: news.createdAt,
-        updatedAt: news.updatedAt,
+
     };
 }
