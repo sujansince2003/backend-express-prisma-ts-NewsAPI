@@ -12,7 +12,7 @@ export const newsSchema = z.object({
 export const createNewsSchema = z.object({
     title: z.string(),
     content: z.string(),
-    coverImg: z.string().optional()
+
 })
 
 export const updateNewsSchema = z.object({
