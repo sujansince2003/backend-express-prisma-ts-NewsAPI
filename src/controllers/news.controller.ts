@@ -13,9 +13,22 @@ type newsDataType = {
 }
 
 export const getNews = async (req: Request, res: Response) => {
-
     try {
+        let page = Number(req.query.page) || 1
+        let limit = Number(req.query.limit) || 10;
+        if (page <= 0) {
+            page = 1
+        }
+        if (limit < 0 || limit > 100) {
+            limit = 10
+        }
+        const skip = (page - 1) * limit
+        const totalNews = await prisma.news.count()
         const newsData = await prisma.news.findMany({
+            take: limit,
+            skip: skip, orderBy: {
+                createdAt: "desc"   // or "asc"
+            },
             include: {
                 user: {
                     select: {
@@ -31,7 +44,6 @@ export const getNews = async (req: Request, res: Response) => {
         if (!newsData) {
             res.status(400).json({
                 message: "Failed to get news data",
-
             })
             return
         }
@@ -41,7 +53,13 @@ export const getNews = async (req: Request, res: Response) => {
         );
         res.status(201).json({
             message: "news fetched successfully",
-            data: transformedNews
+            data: transformedNews,
+            metadata: {
+                currentPage: page,
+                totalPages: Math.ceil(totalNews / limit),
+                totalNews: totalNews,
+
+            }
         })
         return;
 
@@ -52,17 +70,10 @@ export const getNews = async (req: Request, res: Response) => {
         })
         return
     }
-
-
-
 }
 
 export async function CreateNews(req: Request, res: Response) {
-
-
     try {
-
-
         const userId = req.userId;
         if (!userId) {
             res.status(400).json({
@@ -71,7 +82,6 @@ export async function CreateNews(req: Request, res: Response) {
             })
             return
         }
-
         const user = await prisma.user.findUnique({
             where: {
                 id: Number(userId)
@@ -84,7 +94,6 @@ export async function CreateNews(req: Request, res: Response) {
             })
             return
         }
-
 
         const newsData = req.body;
         const validateNewsData = createNewsSchema.safeParse(newsData);
