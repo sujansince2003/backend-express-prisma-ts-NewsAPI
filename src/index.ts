@@ -10,10 +10,10 @@ const app = express()
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use("/uploads", express.static("src/uploads/images"));     //for profile pictures
-app.use("/uploads", express.static("src/uploads/coverimgs"));   //for coverimgs
+app.use("/uploads/images", express.static("src/uploads/images"));     //for profile pictures
+app.use("/uploads/coverimgs", express.static("src/uploads/coverimgs"));   //for coverimgs
 
-// http://localhost:8000/uploads/{filename}
+// http://localhost:8000/uploads/coverimgs/{filename}
 
 app.use(fileupload());
 app.use(cors());
