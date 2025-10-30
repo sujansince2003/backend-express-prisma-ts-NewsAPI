@@ -12,7 +12,7 @@ type newsDataType = {
 
 }
 
-export const getNews = async (req: Request, res: Response) => {
+export const getAllNews = async (req: Request, res: Response) => {
     try {
         let page = Number(req.query.page) || 1
         let limit = Number(req.query.limit) || 10;
@@ -70,6 +70,56 @@ export const getNews = async (req: Request, res: Response) => {
         })
         return
     }
+}
+
+export const getNews = async (req: Request, res: Response) => {
+
+    const newsId = req.params.newsid;
+    if (!newsId) {
+        res.status(400).json({
+            message: "news  ID is required",
+            data: []
+        })
+        return
+    }
+
+    try {
+        const newsData = await prisma.news.findUnique({
+            where: {
+                id: Number(newsId)
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: true
+                    }
+                }
+            }
+        })
+
+        const newsdata = newsData ? TransformNewsResponse(newsData) : null;
+
+        res.status(201).json({
+            message: "News fetched successfully",
+            data: newsData
+        })
+        return
+
+
+    } catch (error) {
+        res.status(500).json({
+            message: "something went wrong",
+            data: []
+        })
+        return
+
+    }
+
+
+
+
 }
 
 export async function CreateNews(req: Request, res: Response) {
