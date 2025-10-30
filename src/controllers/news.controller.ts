@@ -4,7 +4,7 @@ import prisma from "../db/db.config";
 import { UploadedFile } from "express-fileupload";
 import { ImgValidator, uniqueIdGenerator } from "../utils/helper.utils";
 import { TransformNewsResponse } from "../utils/transformResponse.utils";
-import { newsType } from "../validations/newsValidation";
+import type { NewsWithUserType } from "../types/news.types";
 
 type newsDataType = {
     title: string,
@@ -15,7 +15,19 @@ type newsDataType = {
 export const getNews = async (req: Request, res: Response) => {
 
     try {
-        const newsData = await prisma.news.findMany();
+        const newsData = await prisma.news.findMany({
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: true
+
+
+                    }
+                }
+            }
+        });
         if (!newsData) {
             res.status(400).json({
                 message: "Failed to get news data",
@@ -24,11 +36,8 @@ export const getNews = async (req: Request, res: Response) => {
             return
         }
 
-        const transformedNews = newsData.map((news) =>
-            TransformNewsResponse({
-                ...news,
-                coverImg: news.coverImg ?? undefined,
-            })
+        const transformedNews = newsData.map((news: NewsWithUserType) =>
+            TransformNewsResponse(news)
         );
         res.status(201).json({
             message: "news fetched successfully",
