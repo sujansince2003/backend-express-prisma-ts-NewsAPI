@@ -122,6 +122,121 @@ export const getNews = async (req: Request, res: Response) => {
 
 }
 
+
+export const updateNews = async (req: Request, res: Response) => {
+
+    const newsId = req.params.newsid;
+    const userId = req.userId;
+    const rawnewsdata = req.body
+    if (!newsId) {
+        res.status(400).json({
+            message: "news  ID is required",
+            data: []
+        })
+        return
+    }
+    if (!userId) {
+        res.status(400).json({
+            message: "user ID is required",
+            data: []
+        })
+        return
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                id: Number(userId)
+            }
+        })
+        if (!user) {
+            res.status(400).json({
+                message: "user not found",
+                data: []
+            })
+            return
+        }
+        const newsData = await prisma.news.findUnique({
+            where: {
+                id: Number(newsId)
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: true
+                    }
+                }
+            }
+        })
+
+        if (newsData?.user.id !== user?.id) {
+            res.status(401).json({
+                message: "You are not authorized to update the news"
+            })
+        }
+        const validateNewsData = createNewsSchema.safeParse(rawnewsdata);
+        if (!validateNewsData.success) {
+            res.status(400).json({
+                message: "Validation failed for news data",
+                errors: validateNewsData.error.message
+            })
+            return
+        }
+        const { title, content } = validateNewsData.data;
+
+        const coverImg = req.files?.coverImg as UploadedFile;
+        const isvalidImg = ImgValidator(coverImg);
+        if (!isvalidImg.valid) {
+            res.status(400).json({
+                message: isvalidImg.error
+            })
+            return;
+        }
+
+        const imgExtension = coverImg?.name.split(".");
+        const uniquecoverimgname = uniqueIdGenerator() + "." + imgExtension[1];
+        const uploadPath = process.cwd() + "/src/uploads/coverimgs/" + uniquecoverimgname
+        coverImg.mv(uploadPath, (err) => {
+            if (err) throw err
+        })
+
+
+        const updateNews = await prisma.news.update({
+            where: {
+                id: newsData?.id
+            },
+            data: {
+                title: title ? title : newsData?.title,
+                content: content ? content : newsData?.content,
+                coverImg: uploadPath ? uploadPath : newsData?.coverImg
+            }
+        })
+
+        const newsdata = newsData ? TransformNewsResponse(newsData) : null;
+
+        res.status(201).json({
+            message: "News fetched successfully",
+            data: newsData
+        })
+        return
+
+
+    } catch (error) {
+        res.status(500).json({
+            message: "something went wrong",
+            data: []
+        })
+        return
+
+    }
+
+
+
+
+}
+
 export async function CreateNews(req: Request, res: Response) {
     try {
         const userId = req.userId;
@@ -199,3 +314,5 @@ export async function CreateNews(req: Request, res: Response) {
         })
     }
 }
+
+
