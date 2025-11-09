@@ -237,6 +237,95 @@ export const updateNews = async (req: Request, res: Response) => {
 
 }
 
+
+export const deleteNews = async (req: Request, res: Response) => {
+
+    const newsId = req.params.newsid;
+    const userId = req.userId;
+
+    if (!newsId) {
+        res.status(400).json({
+            message: "news  ID is required",
+            data: []
+        })
+        return
+    }
+    if (!userId) {
+        res.status(400).json({
+            message: "user ID is required",
+            data: []
+        })
+        return
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                id: Number(userId)
+            }
+        })
+        if (!user) {
+            res.status(400).json({
+                message: "user not found",
+                data: []
+            })
+            return
+        }
+
+        const newsData = await prisma.news.findUnique({
+            where: {
+                id: Number(newsId)
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: true
+                    }
+                }
+            }
+        })
+
+        if (newsData?.user.id !== user.id) {
+            res.status(401).json({
+                message: "You are not authorized to delete the news"
+            })
+        }
+        const deleteNews = await prisma.news.delete({
+            where: {
+                id: Number(newsId)
+            }
+        })
+
+        res.status(201).json({
+            message: "News deleted successfully",
+            data: []
+        })
+        return
+
+
+    } catch (error) {
+        res.status(500).json({
+            message: "something went wrong",
+            data: []
+        })
+        return
+
+    }
+
+
+
+
+
+}
+
+
+
+
+
+
+
 export async function CreateNews(req: Request, res: Response) {
     try {
         const userId = req.userId;
