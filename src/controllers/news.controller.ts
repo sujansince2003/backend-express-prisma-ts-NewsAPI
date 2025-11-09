@@ -5,6 +5,7 @@ import { UploadedFile } from "express-fileupload";
 import { ImgValidator, uniqueIdGenerator } from "../utils/helper.utils";
 import { TransformNewsResponse } from "../utils/transformResponse.utils";
 import type { NewsWithUserType } from "../types/news.types";
+import { deleteImage } from "../utils/deleteImage";
 
 type newsDataType = {
     title: string,
@@ -202,7 +203,7 @@ export const updateNews = async (req: Request, res: Response) => {
             if (err) throw err
         })
 
-
+        deleteImage("coverImg", newsData?.coverImg as string)
         const updateNews = await prisma.news.update({
             where: {
                 id: newsData?.id
@@ -292,6 +293,8 @@ export const deleteNews = async (req: Request, res: Response) => {
                 message: "You are not authorized to delete the news"
             })
         }
+
+        deleteImage("coverImg", newsData?.coverImg as string)
         const deleteNews = await prisma.news.delete({
             where: {
                 id: Number(newsId)
