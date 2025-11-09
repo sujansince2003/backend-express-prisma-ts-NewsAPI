@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import prisma from "../db/db.config";
 import { ImgValidator, uniqueIdGenerator } from "../utils/helper.utils";
 import { UploadedFile } from "express-fileupload";
+import { deleteImage } from "../utils/deleteImage";
 
 export const getProfile = async (req: Request, res: Response) => {
 
@@ -67,6 +68,17 @@ export const updateProfile = async (req: Request, res: Response) => {
         profile.mv(uploadPath, (err) => {
             if (err) throw err
         })
+
+        const userData = await prisma.user.findUnique({
+            where: {
+                id: Number(userId)
+            }
+        })
+        if (userData?.profile) {
+            deleteImage("profileImg", userData?.profile)
+
+        }
+
 
 
         await prisma.user.update({
