@@ -7,6 +7,7 @@ import { TransformNewsResponse } from "../utils/transformResponse.utils";
 import type { NewsWithUserType } from "../types/news.types";
 import { deleteImage } from "../utils/deleteImage";
 import redisClient from "../redisClient/client.redis";
+import logger from "../utils/Logger";
 
 type newsDataType = {
     title: string,
@@ -137,6 +138,7 @@ export const getNews = async (req: Request, res: Response) => {
         })
 
         if (!newsData) {
+            logger.info(`News not found with ID: ${newsId}`);
             res.status(404).json({
                 message: "News not found",
                 data: []
@@ -155,6 +157,7 @@ export const getNews = async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        logger.error("Error fetching single news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -231,6 +234,7 @@ export const updateNews = async (req: Request, res: Response) => {
             return
         }
         if (newsData?.user.id !== user?.id) {
+            logger.info(`Unauthorized update attempt for news ID: ${newsId} by user ID: ${userId}`);
             res.status(401).json({
                 message: "You are not authorized to update the news"
             })
@@ -295,6 +299,7 @@ export const updateNews = async (req: Request, res: Response) => {
         await redisClient.del(`news:${newsId}`)
         await deleteAllNewsCache()
 
+        logger.info(`News updated successfully: ID ${newsId} by user ID: ${userId}`);
         res.status(200).json({
             message: "News updated successfully",
             data: updatednewsdata
@@ -303,6 +308,7 @@ export const updateNews = async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        logger.error("Error updating news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -367,6 +373,7 @@ export const deleteNews = async (req: Request, res: Response) => {
         })
 
         if (!newsData) {
+            logger.info(`News not found for deletion with ID: ${newsId}`);
             res.status(404).json({
                 message: "News not found",
                 data: []
@@ -375,6 +382,7 @@ export const deleteNews = async (req: Request, res: Response) => {
         }
 
         if (newsData.user.id !== user.id) {
+            logger.info(`Unauthorized delete attempt for news ID: ${newsId} by user ID: ${userId}`);
             res.status(401).json({
                 message: "You are not authorized to delete the news"
             })
@@ -390,6 +398,7 @@ export const deleteNews = async (req: Request, res: Response) => {
         await redisClient.del(`news:${newsId}`)
         await deleteAllNewsCache()
 
+        logger.info(`News deleted successfully: ID ${newsId} by user ID: ${userId}`);
         res.status(200).json({
             message: "News deleted successfully",
             data: []
@@ -398,6 +407,7 @@ export const deleteNews = async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        logger.error("Error deleting news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -484,6 +494,7 @@ export async function CreateNews(req: Request, res: Response) {
             }
         })
         await deleteAllNewsCache()
+        logger.info(`News created successfully: ID ${createNewsData.id} by user ID: ${userId}`);
         res.status(201).json({
             message: "news created successfully!!",
             data: createNewsData
@@ -491,6 +502,7 @@ export async function CreateNews(req: Request, res: Response) {
         return
 
     } catch (error) {
+        logger.error("Error creating news: " + (error as Error).message);
         res.status(500).json({
             message: "Error occured",
             errorMsg: error
