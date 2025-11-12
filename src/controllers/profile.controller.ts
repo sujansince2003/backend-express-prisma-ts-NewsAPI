@@ -3,12 +3,14 @@ import prisma from "../db/db.config";
 import { ImgValidator, uniqueIdGenerator } from "../utils/helper.utils";
 import { UploadedFile } from "express-fileupload";
 import { deleteImage } from "../utils/deleteImage";
+import logger from "../utils/Logger";
 
 export const getProfile = async (req: Request, res: Response) => {
 
     try {
         const userId = req.userId;
         if (!userId) {
+            logger.info("Unauthorized profile access attempt");
             res.status(400).json({
                 message: "unathorizedeee"
             })
@@ -27,17 +29,20 @@ export const getProfile = async (req: Request, res: Response) => {
         });
 
         if (!userInfo) {
+            logger.info(`User not found for profile fetch: ID ${userId}`);
             res.status(500).json({
                 message: "Failed to fetch the data"
             })
             return;
         }
+        logger.info(`Profile fetched successfully for user ID: ${userId}`);
         res.status(200).json({
             message: "User info fetched successfully",
             data: userInfo
         })
         return;
     } catch (error) {
+        logger.error("Error fetching profile: " + (error as Error).message);
         res.status(500).json({
             status: "error",
             code: 500,
@@ -56,6 +61,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
         const isValidImg = ImgValidator(profile);
         if (!isValidImg.valid) {
+            logger.info(`Invalid image upload attempt for user ID: ${userId}`);
             res.status(400).json({
                 message: isValidImg.error
             })
@@ -89,6 +95,7 @@ export const updateProfile = async (req: Request, res: Response) => {
                 id: Number(userId)
             }
         })
+        logger.info(`Profile picture updated successfully for user ID: ${userId}`);
         res.status(200).json({
             message: "profile picture updated successfully",
             data: []
@@ -104,6 +111,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        logger.error("Error updating profile: " + (error as Error).message);
         res.status(500).json({
             status: "error",
             code: 500,
@@ -113,8 +121,4 @@ export const updateProfile = async (req: Request, res: Response) => {
         return;
 
     }
-
-
-
-
 }
