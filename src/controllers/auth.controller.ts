@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
 import { UserAuthSchema, UserLoginSchema } from "../validations/userAuthValidator";
 import logger from "../utils/Logger";
+import sendMail from "../utils/sendmail";
 export const GetAllUsers = async (req: Request, res: Response) => {
     const users = await prisma.user.findMany();
     res.json(users);
@@ -49,6 +50,24 @@ export const RegisterUser = async (req: Request, res: Response, next: NextFuncti
         })
 
         logger.info(`User registered successfully: ${email}`);
+        // send mail to user
+        const subject = "Welcome to Suzan Labs";
+        const mailContent = `
+        <h3>Greeting ${createUser.username} </h3>
+         <h5>Welcome to Suzan News. Thank you for registering  </h5>
+         `
+        try {
+            await sendMail({
+                userMail: createUser.email,
+                subject,
+                mailContent,
+            });
+
+            logger.info(`Welcome email sent to: ${createUser.email}`);
+        } catch (error) {
+            logger.error(` Error sending welcome email to: ${createUser.email} - ${(error as Error).message}`);
+        }
+
         res.status(201).json({ message: "User created successfully", user: createUser });
         return;
 
