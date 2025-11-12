@@ -25,7 +25,9 @@
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^7.0.10",
     "uuid": "^13.0.0",
+    "winston": "^3.18.3",
     "zod": "^4.0.16"
   },
   "devDependencies": {
@@ -33,7 +35,8 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/express-fileupload": "^1.5.1",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.2.1",
+    "@types/nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
     "prisma": "^6.18.0",
     "ts-node": "^10.9.2",

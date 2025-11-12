@@ -6,6 +6,8 @@ import { ImgValidator, uniqueIdGenerator } from "../utils/helper.utils";
 import { TransformNewsResponse } from "../utils/transformResponse.utils";
 import type { NewsWithUserType } from "../types/news.types";
 import { deleteImage } from "../utils/deleteImage";
+import redisClient from "../redisClient/client.redis";
+import logger from "../utils/Logger";
 
 type newsDataType = {
     title: string,
@@ -24,6 +26,24 @@ export const getAllNews = async (req: Request, res: Response) => {
             limit = 10
         }
         const skip = (page - 1) * limit
+
+
+        // cache key
+        const cacheKey = `news:all:${page}:${limit}`
+
+        // get cached data
+        const cachedNewsData = await redisClient.get(cacheKey)
+        if (cachedNewsData) {
+            const parsedNewsData = JSON.parse(cachedNewsData)
+            res.status(200).json({
+                message: "news fetched successfully",
+                data: parsedNewsData,
+
+            })
+            return;
+        }
+
+
         const totalNews = await prisma.news.count()
         const newsData = await prisma.news.findMany({
             take: limit,
@@ -52,7 +72,12 @@ export const getAllNews = async (req: Request, res: Response) => {
         const transformedNews = newsData.map((news: NewsWithUserType) =>
             TransformNewsResponse(news)
         );
-        res.status(201).json({
+
+
+
+        await redisClient.set(cacheKey, JSON.stringify(transformedNews), 'EX', 60);
+
+        res.status(200).json({
             message: "news fetched successfully",
             data: transformedNews,
             metadata: {
@@ -83,8 +108,20 @@ export const getNews = async (req: Request, res: Response) => {
         })
         return
     }
+    const cacheKey = `news:${newsId}`
+    // get cached data
 
     try {
+
+        const cachednews = await redisClient.get(cacheKey)
+        const newscacheddata = cachednews ? JSON.parse(cachednews) : null;
+        if (cachednews) {
+            res.status(200).json({
+                message: "News fetched successfully",
+                data: newscacheddata
+            })
+            return
+        }
         const newsData = await prisma.news.findUnique({
             where: {
                 id: Number(newsId)
@@ -100,16 +137,27 @@ export const getNews = async (req: Request, res: Response) => {
             }
         })
 
-        const newsdata = newsData ? TransformNewsResponse(newsData) : null;
+        if (!newsData) {
+            logger.info(`News not found with ID: ${newsId}`);
+            res.status(404).json({
+                message: "News not found",
+                data: []
+            })
+            return
+        }
 
-        res.status(201).json({
+        const newsdata = TransformNewsResponse(newsData);
+        await redisClient.set(cacheKey, JSON.stringify(newsdata), 'EX', 60);
+
+        res.status(200).json({
             message: "News fetched successfully",
-            data: newsData
+            data: newsdata
         })
         return
 
 
     } catch (error) {
+        logger.error("Error fetching single news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -123,6 +171,13 @@ export const getNews = async (req: Request, res: Response) => {
 
 }
 
+
+async function deleteAllNewsCache() {
+    const keys = await redisClient.keys('news:all:*');
+    if (keys.length > 0) {
+        await redisClient.del(...keys);
+    }
+}
 
 export const updateNews = async (req: Request, res: Response) => {
 
@@ -171,11 +226,19 @@ export const updateNews = async (req: Request, res: Response) => {
                 }
             }
         })
-
+        if (!newsData) {
+            res.status(404).json({
+                message: "News not found",
+                data: []
+            })
+            return
+        }
         if (newsData?.user.id !== user?.id) {
+            logger.info(`Unauthorized update attempt for news ID: ${newsId} by user ID: ${userId}`);
             res.status(401).json({
                 message: "You are not authorized to update the news"
             })
+            return
         }
         const validateNewsData = createNewsSchema.safeParse(rawnewsdata);
         if (!validateNewsData.success) {
@@ -196,7 +259,14 @@ export const updateNews = async (req: Request, res: Response) => {
             return;
         }
 
-        const imgExtension = coverImg?.name.split(".");
+        if (!coverImg?.name) {
+            res.status(400).json({
+                message: "Invalid file name"
+            })
+            return;
+        }
+
+        const imgExtension = coverImg.name.split(".");
         const uniquecoverimgname = uniqueIdGenerator() + "." + imgExtension[1];
         const uploadPath = process.cwd() + "/src/uploads/coverimgs/" + uniquecoverimgname
         coverImg.mv(uploadPath, (err) => {
@@ -204,27 +274,41 @@ export const updateNews = async (req: Request, res: Response) => {
         })
 
         deleteImage("coverImg", newsData?.coverImg as string)
-        const updateNews = await prisma.news.update({
-            where: {
-                id: newsData?.id
-            },
+        await prisma.news.update({
+            where: { id: newsData.id },
             data: {
-                title: title ? title : newsData?.title,
-                content: content ? content : newsData?.content,
-                coverImg: uploadPath ? uploadPath : newsData?.coverImg
+                title: title || newsData.title,
+                content: content || newsData.content,
+                coverImg: uniquecoverimgname || newsData.coverImg
             }
         })
+        const updatedNewsWithUser = await prisma.news.findUnique({
+            where: { id: Number(newsId) },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: true
+                    }
+                }
+            }
+        });
+        const updatednewsdata = updatedNewsWithUser ? TransformNewsResponse(updatedNewsWithUser) : null;
 
-        const newsdata = newsData ? TransformNewsResponse(newsData) : null;
+        await redisClient.del(`news:${newsId}`)
+        await deleteAllNewsCache()
 
-        res.status(201).json({
-            message: "News fetched successfully",
-            data: newsData
+        logger.info(`News updated successfully: ID ${newsId} by user ID: ${userId}`);
+        res.status(200).json({
+            message: "News updated successfully",
+            data: updatednewsdata
         })
         return
 
 
     } catch (error) {
+        logger.error("Error updating news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -288,10 +372,21 @@ export const deleteNews = async (req: Request, res: Response) => {
             }
         })
 
-        if (newsData?.user.id !== user.id) {
+        if (!newsData) {
+            logger.info(`News not found for deletion with ID: ${newsId}`);
+            res.status(404).json({
+                message: "News not found",
+                data: []
+            })
+            return
+        }
+
+        if (newsData.user.id !== user.id) {
+            logger.info(`Unauthorized delete attempt for news ID: ${newsId} by user ID: ${userId}`);
             res.status(401).json({
                 message: "You are not authorized to delete the news"
             })
+            return
         }
 
         deleteImage("coverImg", newsData?.coverImg as string)
@@ -300,8 +395,11 @@ export const deleteNews = async (req: Request, res: Response) => {
                 id: Number(newsId)
             }
         })
+        await redisClient.del(`news:${newsId}`)
+        await deleteAllNewsCache()
 
-        res.status(201).json({
+        logger.info(`News deleted successfully: ID ${newsId} by user ID: ${userId}`);
+        res.status(200).json({
             message: "News deleted successfully",
             data: []
         })
@@ -309,6 +407,7 @@ export const deleteNews = async (req: Request, res: Response) => {
 
 
     } catch (error) {
+        logger.error("Error deleting news: " + (error as Error).message);
         res.status(500).json({
             message: "something went wrong",
             data: []
@@ -372,18 +471,19 @@ export async function CreateNews(req: Request, res: Response) {
             return;
         }
 
-        const imgExtension = coverImg?.name.split(".");
+        if (!coverImg?.name) {
+            res.status(400).json({
+                message: "Invalid file name"
+            })
+            return;
+        }
+
+        const imgExtension = coverImg.name.split(".");
         const uniquecoverimgname = uniqueIdGenerator() + "." + imgExtension[1];
         const uploadPath = process.cwd() + "/src/uploads/coverimgs/" + uniquecoverimgname
         coverImg.mv(uploadPath, (err) => {
             if (err) throw err
         })
-
-
-
-
-
-
 
         const createNewsData = await prisma.news.create({
             data: {
@@ -393,17 +493,21 @@ export async function CreateNews(req: Request, res: Response) {
                 userId: Number(userId)
             }
         })
-
+        await deleteAllNewsCache()
+        logger.info(`News created successfully: ID ${createNewsData.id} by user ID: ${userId}`);
         res.status(201).json({
             message: "news created successfully!!",
             data: createNewsData
         })
+        return
 
     } catch (error) {
+        logger.error("Error creating news: " + (error as Error).message);
         res.status(500).json({
             message: "Error occured",
             errorMsg: error
         })
+        return
     }
 }
 
