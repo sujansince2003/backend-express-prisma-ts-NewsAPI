@@ -10,6 +10,8 @@ import { rateLimiter } from "./utils/ratelimit";
 import logger from "./utils/Logger";
 
 
+
+
 const app = express()
 
 app.use(express.json());
@@ -30,8 +32,10 @@ app.use("/api/profile", profileRouter);
 app.use("/api/news", newsRouter);
 
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/", async (req: Request, res: Response) => {
+    // addJobs()
     logger.info("Hello Soham! This is a log message.")
+
 
     res.json({ msg: "hello soham" })
 })
