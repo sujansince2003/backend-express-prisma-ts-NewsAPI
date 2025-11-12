@@ -1,11 +1,4 @@
 import { Redis } from "ioredis"
-<<<<<<< HEAD
-
-const Redisclient = new Redis();
-
-
-export default Redisclient;
-=======
 import logger from "../utils/Logger"
 
 const redisClient = new Redis({
@@ -31,4 +24,3 @@ redisClient.on('reconnecting', () => {
 })
 
 export default redisClient
->>>>>>> backend2

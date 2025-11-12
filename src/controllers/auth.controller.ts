@@ -6,6 +6,12 @@ import jwt from "jsonwebtoken"
 import { UserAuthSchema, UserLoginSchema } from "../validations/userAuthValidator";
 import logger from "../utils/Logger";
 import sendMail from "../utils/sendmail";
+import { emailQueue } from "../queue/emailqueue";
+// import { addJobs } from "../queue/emailqueue";
+
+
+
+
 export const GetAllUsers = async (req: Request, res: Response) => {
     const users = await prisma.user.findMany();
     res.json(users);
@@ -56,17 +62,21 @@ export const RegisterUser = async (req: Request, res: Response, next: NextFuncti
         <h3>Greeting ${createUser.username} </h3>
          <h5>Welcome to Suzan News. Thank you for registering  </h5>
          `
-        try {
-            await sendMail({
-                userMail: createUser.email,
-                subject,
-                mailContent,
-            });
+        // try {
+        //     await sendMail({
+        //         userMail: createUser.email,
+        //         subject,
+        //         mailContent,
+        //     });
 
-            logger.info(`Welcome email sent to: ${createUser.email}`);
-        } catch (error) {
-            logger.error(` Error sending welcome email to: ${createUser.email} - ${(error as Error).message}`);
-        }
+        //     logger.info(`Welcome email sent to: ${createUser.email}`);
+        // } catch (error) {
+        //     logger.error(` Error sending welcome email to: ${createUser.email} - ${(error as Error).message}`);
+        // }
+
+        await emailQueue.add("myJobName", { userMail: createUser.email, subject, mailContent });
+        // await emailQueue.add("myJobName", { qux: "baz" });
+
 
         res.status(201).json({ message: "User created successfully", user: createUser });
         return;

@@ -7,8 +7,10 @@
   "type": "commonjs",
   "main": "./src/index.ts",
   "scripts": {
-    "start": "node ./dist/index.js",
-    "dev": "nodemon",
+  "start": "node ./dist/index.js",
+  "dev": "nodemon --exec tsx src/index.ts",
+  "worker:dev": "nodemon --exec tsx src/workers/emailWorker.ts",
+   "worker": "tsx worker/emailworker.ts",
     "build": "npm install && npx prisma generate && npx tsc"
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.63.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
