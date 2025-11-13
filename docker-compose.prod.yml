@@ -1,0 +1,49 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    networks:
+      - app-network
+
+  api:
+    build: .
+    container_name: api-server
+    command: ["npm", "run", "start:api"]
+    restart: always
+    ports:
+      - "8000"  
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: ${DATABASE_URL}     
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY} 
+      BACKEND_URL: ${BACKEND_URL}       
+      GMAIL_PASSWORD: ${GMAIL_PASSWORD} 
+      GMAIL_CLIENT_MAIL: ${GMAIL_CLIENT_MAIL} 
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  worker:
+    build: .
+    container_name: email-worker
+    command: ["npm", "run", "start:worker"]
+    restart: always
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_URL: ${DATABASE_URL}      
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}  
+      BACKEND_URL: ${BACKEND_URL}        
+      GMAIL_PASSWORD: ${GMAIL_PASSWORD}  
+      GMAIL_CLIENT_MAIL: ${GMAIL_CLIENT_MAIL}  
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
