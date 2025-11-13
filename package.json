@@ -7,11 +7,11 @@
   "type": "commonjs",
   "main": "./src/index.ts",
   "scripts": {
-  "start": "node ./dist/index.js",
+  "start:api": "node ./dist/index.js",
+  "start:worker": "node ./dist/workers/emailWorker.js",
   "dev": "nodemon --exec tsx src/index.ts",
   "worker:dev": "nodemon --exec tsx src/workers/emailWorker.ts",
-   "worker": "tsx worker/emailworker.ts",
-    "build": "npm install && npx prisma generate && npx tsc"
+  "build": "npm install && npx prisma generate && npx tsc"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
